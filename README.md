@@ -10,7 +10,7 @@ In more complex text-guided image generation tasks (MS-COCO), our method surpass
 
 ![visual](fig/visual.png)
 
-![mscoco](fig/mscoco-4.pdf)
+![mscoco](fig/mscoco-4(1).pdf)
 
 
 ## Overview
