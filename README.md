@@ -10,12 +10,12 @@ In more complex text-guided image generation tasks (MS-COCO), our method surpass
 
 ![visual](fig/visual.png)
 
-![mscoco](fig/mscoco-4(1).pdf)
+![mscoco](fig/mscoco.png)
 
 
 ## Overview
 
-![pipeline](fig/pipeline.pdf)  
+![pipeline](fig/pipeline.png)  
 
 QNCD identify two primary quantization challenges: *intra* and *inter* quantization noise. Intra quantization noise, mainly exacerbated by embeddings in the resblock module, extends activation quantization ranges, increasing disturbances in each single denosing step. Besides, inter quantization noise stems from cumulative quantization deviations across the entire denoising process, altering data distributions step-by-step. 
 
@@ -41,8 +41,22 @@ conda activate qncd
 4. Then use the following commands for calculation quantization scales and synthesizing images:
 
 # CIFAR-10 (DDIM)
-# 8/8-bit weights-only
+# 8/8-bit 
 python scripts/sample_diffusion_ddim.py --config configs/cifar10.yml --use_pretrained --timesteps 100 --eta 0 --skip_type quad --ptq --weight_bit 8 --quant_mode qncd  -l <output_path> --cali_ckpt <quantized_ckpt_path> --sample_reverse 4
+
+# MS-COCO (Stable Diffusion)
+# 8/8-bit 
+python scripts/txt2img.py \
+--plms --cond  --weight_bit 8 --quant_mode qncd --quant_act --act_bit 8 \
+--cali_st 25 --cali_batch_size 1 --cali_n 128 --no_grad_ckpt  --ptq \
+--scale_split_static --sample_reverse --reverse_interval 10 \
+--running_stat --sm_abit 16 --from_file val_ann.txt --n_samples 2 
+
+# Calculate FID/IS
+python evaluator.py     \
+<Real_dataset>  \
+<Synthesized_dataset>
+
 
 
 
