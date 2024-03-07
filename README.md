@@ -59,9 +59,7 @@ python scripts/txt2img.py \
 --running_stat --sm_abit 16 --from_file val_ann.txt --n_samples 2 
 
 # Calculate FID/IS
-python evaluator.py     \
-<Real_dataset>  \
-<Synthesized_dataset>
+python evaluator.py    <Real_dataset>  <Synthesized_dataset>
 
 
 
