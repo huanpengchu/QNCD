@@ -19,18 +19,17 @@ import torch
 import torch.nn as nn
 from torch import autocast
 from contextlib import nullcontext
-import sys
-sys.path.append('/home/wuwei10/qat_worksapce/q-diffusion-stable/q-diffusion/')
+
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
-from qdiff import (
+from quant import (
     QuantModel, QuantModule, BaseQuantBlock, 
     block_reconstruction, layer_reconstruction,
 )
-from qdiff.adaptive_rounding import AdaRoundQuantizer
-from qdiff.quant_layer import UniformAffineQuantizer
-from qdiff.utils import resume_cali_model, get_train_samples
+from quant.adaptive_rounding import AdaRoundQuantizer
+from quant.quant_layer import UniformAffineQuantizer
+from quant.utils import resume_cali_model, get_train_samples
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from transformers import AutoFeatureExtractor
 
@@ -61,21 +60,7 @@ def numpy_to_pil(images):
 
 def load_model_from_config(config, ckpt, verbose=False):
     logging.info(f"Loading model from {ckpt}")
-    ckpt='/home/wuwei10/qat_worksapce/q-diffusion-stable/q-diffusion/models/ldm/stable-diffusion-v-1-4-original/sd-v1-4.ckpt'
-    # model_id = "CompVis/stable-diffusion-v1-4"
-    # from diffusers import UNet2DConditionModel
-
-    # model = UNet2DConditionModel.from_pretrained(model_id, subfolder="unet", use_safetensors=True)
-    # # import pdb
-    # # pdb.set_trace()
-    # sd=model.state_dict()
-    # import ipdb
-    # ipdb.set_trace()
-    # model.cuda()
-    # model.eval()
-    # return model
-    # python3 data.py export /home/wuwei10/qat_worksapce/PTQ4DM/PTQ4DM/data/church_outdoor_val_lmdb --out_dir /church_outdoor_val
-
+    ckpt='..ckpts/sd-v1-4.ckpt'
 
     pl_sd = torch.load(ckpt, map_location="cpu")
     if "global_step" in pl_sd:
@@ -357,26 +342,25 @@ def main(ipy_visual=False,kwargs=None):
     )
     parser.add_argument(
         "--quant_mode", type=str, default="symmetric", 
-        choices=["linear", "squant", "qdiff"], 
+        choices=["linear", "squant", "qncd"], 
         help="quantization mode to use"
     )
 
-    # qdiff specific configs
     parser.add_argument(
         "--cali_st", type=int, default=1, 
         help="number of timesteps used for calibration"
     )
     parser.add_argument(
         "--cali_batch_size", type=int, default=32, 
-        help="batch size for qdiff reconstruction"
+        help="batch size for qncd reconstruction"
     )
     parser.add_argument(
         "--cali_n", type=int, default=1024, 
-        help="number of samples for each timestep for qdiff reconstruction"
+        help="number of samples for each timestep for qncd reconstruction"
     )
     parser.add_argument(
         "--cali_iters", type=int, default=20000, 
-        help="number of iterations for each qdiff reconstruction"
+        help="number of iterations for each qncd reconstruction"
     )
     parser.add_argument('--cali_iters_a', default=5000, type=int, #original 5000
         help='number of iteration for LSQ')
@@ -389,16 +373,16 @@ def main(ipy_visual=False,kwargs=None):
         help="path for calibrated model ckpt"
     )
     parser.add_argument(
-        "--cali_data_path", type=str, default="/home/wuwei10/qat_worksapce/q-diffusion-stable/q-diffusion/sd_coco-s75_sample1024_allst.pt",
+        "--cali_data_path", type=str, default="sd_coco-s75_sample1024_allst.pt",
         help="calibration dataset name"
     )
     parser.add_argument(
         "--resume", action="store_true",
-        help="resume the calibrated qdiff model"
+        help="resume the calibrated qncd model"
     )
     parser.add_argument(
         "--resume_w", action="store_true",
-        help="resume the calibrated qdiff model weights only"
+        help="resume the calibrated qncd model weights only"
     )
     parser.add_argument(
         "--cond", action="store_true",
@@ -503,7 +487,7 @@ def main(ipy_visual=False,kwargs=None):
     if opt.ptq:
         if opt.split:
             setattr(sampler.model.model.diffusion_model, "split", True)
-        if opt.quant_mode == 'qdiff':
+        if opt.quant_mode == 'qncd':
             wq_params = {'n_bits': opt.weight_bit, 'channel_wise': True, 'scale_method': 'max'} #mse
             aq_params = {'n_bits': opt.act_bit, 'channel_wise': False, 'scale_method': 'mse', 'leaf_param':  opt.quant_act}
             if opt.resume:
@@ -514,7 +498,7 @@ def main(ipy_visual=False,kwargs=None):
                 wq_params['scale_method'] = 'max'
             qnn = QuantModel(
                 model=sampler.model.model.diffusion_model, weight_quant_params=wq_params, act_quant_params=aq_params,
-                act_quant_mode="qdiff", sm_abit=opt.sm_abit)
+                act_quant_mode="qncd", sm_abit=opt.sm_abit)
             qnn.cuda()
             qnn.eval()
             qnn.disable_network_output_quantization()
@@ -533,7 +517,7 @@ def main(ipy_visual=False,kwargs=None):
                 if(opt.scale_split_static):
                     calculate_scale(qnn,cali_data,opt)
 
-                resume_cali_model(qnn, opt.cali_ckpt, cali_data, opt.quant_act, "qdiff", cond=opt.cond)
+                resume_cali_model(qnn, opt.cali_ckpt, cali_data, opt.quant_act, "qncd", cond=opt.cond)
             else:
                 logger.info(f"Sampling data from {opt.cali_st} timesteps for calibration")
                 sample_data = torch.load(opt.cali_data_path)
@@ -564,7 +548,7 @@ def main(ipy_visual=False,kwargs=None):
 
 
                 ##################### set transformerblock to float####################
-                from qdiff.quant_block import QuantBasicTransformerBlock
+                from quant.quant_block import QuantBasicTransformerBlock
                 def set_transformer_float(qnn):
                     for name,module in qnn.named_modules():
                         if isinstance(module,QuantBasicTransformerBlock):
