@@ -6,10 +6,11 @@ QNCD is the first work to explore model quantization of diffusion models down to
 
 ![imagenet](fig/imagenet.png)
 
+
+
 ## Results on MS-COCO
 
 In more complex text-guided image generation tasks (MS-COCO), our method surpasses existing techniques in terms of statistical metrics (FID and CLIP Score, visual results, and Image Quality Assessment (IQA) scores:
-
 
 ![visual](fig/visual.png)
 
@@ -23,6 +24,8 @@ In more complex text-guided image generation tasks (MS-COCO), our method surpass
 QNCD identify two primary quantization challenges: *intra* and *inter* quantization noise. Intra quantization noise, mainly exacerbated by embeddings in the resblock module, extends activation quantization ranges, increasing disturbances in each single denosing step. Besides, inter quantization noise stems from cumulative quantization deviations across the entire denoising process, altering data distributions step-by-step. 
 
 QNCD combats these through embedding-derived feature smoothing for eliminating intra quantization noise and an effective runtime noise estimatiation module for dynamicly filtering inter quantization noise.
+
+
 
 ## Getting Started
 
