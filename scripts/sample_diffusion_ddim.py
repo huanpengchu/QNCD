@@ -16,13 +16,13 @@ from ddim.functions.ckpt_util import get_ckpt_path
 
 import torchvision.utils as tvu
 
-from qdiff import (
+from quant import (
     QuantModel, QuantModule, BaseQuantBlock, 
     block_reconstruction, layer_reconstruction,
 )
-from qdiff.adaptive_rounding import AdaRoundQuantizer
-from qdiff.quant_layer import UniformAffineQuantizer
-from qdiff.utils import resume_cali_model, get_train_samples,resume_cali_model_uniform
+from quant.adaptive_rounding import AdaRoundQuantizer
+from quant.quant_layer import UniformAffineQuantizer
+from quant.utils import resume_cali_model, get_train_samples,resume_cali_model_uniform
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ class Diffusion(object):
         # ipdb.set_trace()
         assert(self.args.cond == False)
         if self.args.ptq:
-            if self.args.quant_mode == 'qdiff':
+            if self.args.quant_mode == 'qncd':
                 wq_params = {'n_bits': args.weight_bit, 'symmetric': True, 'channel_wise': True, 'scale_method': 'max'}
                 aq_params = {'n_bits': args.act_bit, 'symmetric': args.a_sym, 'channel_wise': False, 'scale_method': 'mse', 'leaf_param': args.quant_act}
                 qnn = QuantModel(
