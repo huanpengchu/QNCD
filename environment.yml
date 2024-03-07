@@ -1,4 +1,4 @@
-name: qdiff
+name: qncd
 channels:
   - pytorch
   - nvidia
