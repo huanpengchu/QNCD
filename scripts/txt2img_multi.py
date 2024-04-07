@@ -20,7 +20,6 @@ import torch.nn as nn
 from torch import autocast
 from contextlib import nullcontext
 import sys
-sys.path.append('/home/wuwei10/qat_worksapce/q-diffusion-stable/q-diffusion/')
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
@@ -62,21 +61,7 @@ def numpy_to_pil(images):
 
 def load_model_from_config(config, ckpt, verbose=False):
     logging.info(f"Loading model from {ckpt}")
-    ckpt='/home/wuwei10/qat_worksapce/q-diffusion-stable/q-diffusion/models/ldm/stable-diffusion-v-1-4-original/sd-v1-4.ckpt'
-    # model_id = "CompVis/stable-diffusion-v1-4"
-    # from diffusers import UNet2DConditionModel
-
-    # model = UNet2DConditionModel.from_pretrained(model_id, subfolder="unet", use_safetensors=True)
-    # # import pdb
-    # # pdb.set_trace()
-    # sd=model.state_dict()
-    # import ipdb
-    # ipdb.set_trace()
-    # model.cuda()
-    # model.eval()
-    # return model
-    # python3 data.py export /home/wuwei10/qat_worksapce/PTQ4DM/PTQ4DM/data/church_outdoor_val_lmdb --out_dir /church_outdoor_val
-
+    ckpt=''
 
     pl_sd = torch.load(ckpt, map_location="cpu")
     if "global_step" in pl_sd:
@@ -473,7 +458,7 @@ def main(ipy_visual=False,kwargs=None):
         help="path for calibrated model ckpt"
     )
     parser.add_argument(
-        "--cali_data_path", type=str, default="/home/wuwei10/qat_worksapce/q-diffusion-stable/q-diffusion/sd_coco-s75_sample1024_allst.pt",
+        "--cali_data_path", type=str, default="",
         help="calibration dataset name"
     )
     parser.add_argument(
