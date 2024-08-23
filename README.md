@@ -1,6 +1,8 @@
 
 # QNCD: Quantization Noise Correction for Diffusion Models
 
+## Accepted by ACM MM 2024
+
 ## Results on ImageNet
 QNCD is the first work to explore model quantization of diffusion models down to 6-bit activation quantization. Simultaneously, QNCD is able to achieve lossless quantization under W4A8 and W8A8 settings, as shown in the following table: 
 
